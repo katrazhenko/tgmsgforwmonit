@@ -461,7 +461,7 @@
     <span class="pill blue">Telethon</span>
     <span class="pill purple">OpenAI GPT</span>
     <span class="pill">systemd</span>
-    <span class="pill">30 тестів ✓</span>
+    <span class="pill">45 тестів ✓</span>
   </div>
 </header>
 
@@ -488,6 +488,9 @@
 
     <div class="flow">
       <div class="flow-step"><span class="icon">📨</span> Вхідне повідомлення</div>
+      <div class="flow-arrow"></div>
+      <div class="flow-step"><span class="icon">👤</span> Чат адміна?</div>
+      <div class="flow-branch"><div class="br-line"></div><span class="br-tag ignore">ІГНОР</span> чат зі списку admins</div>
       <div class="flow-arrow"></div>
       <div class="flow-step"><span class="icon">🚫</span> Перевірка мінус-слів</div>
       <div class="flow-branch"><div class="br-line"></div><span class="br-tag ignore">ІГНОР</span> знайдено стоп-слово</div>
@@ -659,6 +662,12 @@ sudo systemctl start tgmsgforwmonit</code></pre>
         <tr><td>/ai_disable</td><td>Вимкнути</td></tr>
         <tr><td>/ai_set_key sk-...</td><td>Задати OpenAI API ключ</td></tr>
         <tr><td>/ai_set_model gpt-4o-mini</td><td>Змінити модель GPT</td></tr>
+        <tr><td>/ai_set_role &lt;текст&gt;</td><td>Задати роль/системний промпт AI</td></tr>
+        <tr><td>/ai_get_role</td><td>Переглянути поточну роль</td></tr>
+        <tr><td>/ai_set_target &lt;текст&gt;</td><td>Критерії цільового повідомлення</td></tr>
+        <tr><td>/ai_get_target</td><td>Переглянути критерії цільового</td></tr>
+        <tr><td>/ai_set_spam &lt;текст&gt;</td><td>Критерії спаму</td></tr>
+        <tr><td>/ai_get_spam</td><td>Переглянути критерії спаму</td></tr>
         <tr><td>/ai_status</td><td>Статус, модель, статистика</td></tr>
         <tr><td>/ai_test &lt;текст&gt;</td><td>Протестувати фільтр на довільному тексті</td></tr>
       </table>
@@ -752,6 +761,9 @@ sudo systemctl start tgmsgforwmonit</code></pre>
       <li>Знайдене ключове слово</li>
       <li>Назву чату</li>
       <li>Перші 50 keywords та 20 minus_words як контекст</li>
+      <li>Роль AI (<code>ai_main_filter_role</code>)</li>
+      <li>Критерії цільового (<code>ai_tagret_filter_criteria</code>)</li>
+      <li>Критерії спаму (<code>ai_spam_filter_criteria</code>)</li>
     </ul>
 
     <h3>Рекомендовані моделі</h3>
@@ -797,21 +809,21 @@ grep "AI ЗАБЛОКУВАВ" /opt/tgmsgforwmonit/monitor.log | wc -l</code></p
 
 <pre><button class="copy-btn" onclick="copy(this)">copy</button><code>cd /opt/tgmsgforwmonit
 source .venv/bin/activate
-python tests.py</code></pre>
+python -m pytest test_main.py -v</code></pre>
 
     <table class="cmd-table">
       <tr><th>Модуль</th><th>Тести</th><th>Що перевіряється</th></tr>
       <tr><td>clean_minus_words</td><td>7</td><td>skip/keyword видалення, дедублікація, порожні входи</td></tr>
-      <tr><td>has_minus_word</td><td>6</td><td>одне слово, мультислів. фраза, регістр, порожні дані</td></tr>
-      <tr><td>find_keyword</td><td>8</td><td>мультислів. keyword, кирилиця, часткові збіги</td></tr>
-      <tr><td>format_sender</td><td>4</td><td>всі комбінації: ім'я + username, id, порожньо</td></tr>
-      <tr><td>is_admin</td><td>4</td><td>регістр, валідний/невалідний, порожній список</td></tr>
+      <tr><td>has_minus_word</td><td>10</td><td>одне слово, мультислів. фраза, регістр, unicode, пунктуація</td></tr>
+      <tr><td>find_keyword</td><td>11</td><td>мультислів. keyword, кирилиця, часткові збіги, accents</td></tr>
+      <tr><td>format_sender/chat</td><td>7</td><td>всі комбінації: ім'я + username, id, None, порожньо</td></tr>
+      <tr><td>is_admin</td><td>6</td><td>регістр, валідний/невалідний, порожній список, без @</td></tr>
       <tr><td>integration</td><td>2</td><td>очищення без хибних спрацювань, спам залишається</td></tr>
     </table>
 
     <div class="alert success">
       <span class="alert-icon">✅</span>
-      <span><strong>30 тестів, 0 помилок</strong></span>
+      <span><strong>45 тестів, 0 помилок</strong></span>
     </div>
   </section>
 

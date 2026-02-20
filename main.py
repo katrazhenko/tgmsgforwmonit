@@ -493,7 +493,7 @@ async def commands(event):
         if not OPENAI_AVAILABLE:
             await event.reply("❌ OpenAI не встановлено: pip install openai")
             return
-        if not config.get("openai_api_key") or config.get("openai_api_key") == "YOUR_OPENAI_API_KEY":
+        if not OPENAI_API_KEY or OPENAI_API_KEY == "YOUR_OPENAI_API_KEY":
             await event.reply("❌ Спочатку задай ключ: /ai_set_key sk-…")
             return
         config["ai_filter_enabled"] = True
