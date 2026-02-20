@@ -25,6 +25,8 @@ telethon_tl_channels.JoinChannelRequest  = MagicMock()
 telethon_tl_channels.LeaveChannelRequest = MagicMock()
 telethon_errors = types.ModuleType("telethon.errors")
 telethon_errors.FloodWaitError = Exception
+telethon_tl_types = types.ModuleType("telethon.tl.types")
+telethon_tl_types.InputChannel = MagicMock()
 
 sys.modules.setdefault("telethon",                          telethon_stub)
 sys.modules.setdefault("telethon.events",                   telethon_events)
@@ -32,6 +34,7 @@ sys.modules.setdefault("telethon.tl",                       telethon_tl)
 sys.modules.setdefault("telethon.tl.functions",             telethon_tl_funcs)
 sys.modules.setdefault("telethon.tl.functions.channels",    telethon_tl_channels)
 sys.modules.setdefault("telethon.errors",                   telethon_errors)
+sys.modules.setdefault("telethon.tl.types",                 telethon_tl_types)
 
 # Задаємо env щоб не впав при перевірці
 import os
@@ -266,6 +269,75 @@ class TestIntegration:
         # cleaned == ["garantizado rápido"]
         msg = "Asilo garantizado rápido sin papeles"
         assert has_minus_word(msg, cleaned)
+
+send_long_message = main_module.send_long_message
+
+
+# ════════════════════════════════════════════════════════════════
+# Edge cases: has_minus_word — unicode & punctuation
+# ════════════════════════════════════════════════════════════════
+class TestHasMinusWordEdgeCases:
+    def test_cyrillic_minus_word(self):
+        assert has_minus_word("Купить USDT быстро", ["купить usdt"])
+
+    def test_minus_word_with_punctuation(self):
+        assert has_minus_word("¡Garantizado! tu cita", ["garantizado"])
+
+    def test_substring_match(self):
+        """minus_words uses substring match, not word-boundary."""
+        assert has_minus_word("cryptocurrency trading", ["crypto"])
+
+    def test_multiline_text(self):
+        text = "Первая строка\nвторая строка con bitcoin\nтретья"
+        assert has_minus_word(text, ["bitcoin"])
+
+
+# ════════════════════════════════════════════════════════════════
+# Edge cases: find_keyword — special chars & unicode
+# ════════════════════════════════════════════════════════════════
+class TestFindKeywordEdgeCases:
+    def test_keyword_with_accent(self):
+        assert find_keyword("necesito renovación urgente", ["renovación"]) == "renovación"
+
+    def test_keyword_not_as_substring(self):
+        """Word boundary prevents matching 'nie' inside 'anieto'."""
+        assert find_keyword("mi anieto tiene hambre", ["nie"]) is None
+
+    def test_numbers_in_keyword(self):
+        assert find_keyword("necesito modelo 790 por favor", ["modelo 790"]) == "modelo 790"
+
+
+# ════════════════════════════════════════════════════════════════
+# Edge cases: format_sender & format_chat
+# ════════════════════════════════════════════════════════════════
+class TestFormatEdgeCases:
+    def test_sender_with_none_first_name(self):
+        s = MagicMock()
+        s.first_name = None
+        s.last_name = None
+        s.username = "testuser"
+        s.id = 42
+        result = format_sender(s)
+        assert "@testuser" in result
+
+    def test_chat_with_none_title(self):
+        c = MagicMock()
+        c.title = None
+        c.username = "channel_name"
+        result = format_chat(c)
+        assert "@channel_name" in result
+
+
+# ════════════════════════════════════════════════════════════════
+# is_admin edge cases
+# ════════════════════════════════════════════════════════════════
+class TestIsAdminEdgeCases:
+    def test_admin_with_empty_username(self):
+        assert not is_admin("", ["@admin"])
+
+    def test_admin_list_with_no_at_prefix(self):
+        """Admins in config should include @, but if they don't — no match."""
+        assert not is_admin("user123", ["user123"])
 
 
 if __name__ == "__main__":

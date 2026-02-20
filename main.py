@@ -27,7 +27,7 @@ try:
     from openai import OpenAI
     OPENAI_AVAILABLE = True
 except ImportError:
-    from openai import OpenAI
+    OpenAI = None
     OPENAI_AVAILABLE = False
     log.warning("OpenAI не встановлено. pip install openai")
 
@@ -35,7 +35,7 @@ except ImportError:
 # Захист від подвійного запуску
 # ──────────────────────────────────────────────────────────────
 LOCK_FILE = Path("monitor.lock")
-EFP = Path("/root/tgmsgforwmonit/.env")
+EFP = Path(".env")
 if LOCK_FILE.exists():
     log.error("Скрипт вже запущено! Зупини попередній або видали monitor.lock")
     sys.exit(1)
@@ -75,15 +75,7 @@ if not all([API_ID, API_HASH, PHONE]):
     )
     sys.exit(1)
 
-data = {
-    "name": "Jane Doe",
-    "age": 28,
-    "city": "San Francisco",
-    "is_student": False,
-    "gpa": 3.9
-}
-
-CONFIG_FILE = Path("_config.json")
+CONFIG_FILE = Path("config.json")
 
 # ──────────────────────────────────────────────────────────────
 # Кешований конфіг + lock
@@ -290,19 +282,20 @@ async def ai_filter_message(text: str, keyword: str, chat_name: str) -> bool:
 # ──────────────────────────────────────────────────────────────
 # Безпечна відправка
 # ──────────────────────────────────────────────────────────────
-async def safe_send(destination: str, text: str) -> None:
+async def safe_send(destination: str, text: str, max_retries: int = 5) -> None:
     """Надсилає з автоматичним FloodWait retry."""
-    while True:
+    for attempt in range(max_retries):
         try:
             await client.send_message(destination, text)
             return
         except FloodWaitError as exc:
             wait = exc.seconds + 5
-            log.warning(f"FloodWait: чекаю {wait}с…")
+            log.warning(f"FloodWait: чекаю {wait}с… (спроба {attempt + 1}/{max_retries})")
             await asyncio.sleep(wait)
         except Exception as exc:
             log.error(f"Помилка відправки в {destination}: {exc}")
             return
+    log.error(f"safe_send: не вдалося після {max_retries} спроб у {destination}")
 
 
 async def send_long_message(destination: str, text: str, max_length: int = 4000) -> None:
@@ -360,6 +353,10 @@ async def background_forwarder() -> None:
 
         except Exception as exc:
             log.error(f"Помилка в фоновій пересилці: {exc}")
+            try:
+                pending_messages.task_done()
+            except ValueError:
+                pass
             await asyncio.sleep(5)
 
 
@@ -372,7 +369,7 @@ async def join_all_background(queue: list[str], config: dict) -> None:
 
     for i, group in enumerate(queue, 1):
         try:
-            await client(JoinChannelRequest(TypeInputChannel(group)))
+            await client(JoinChannelRequest(group))
             success.append(group)
             for admin in admins:
                 await safe_send(admin, f"✅ [{i}/{len(queue)}] Вступив: {group}")
@@ -507,7 +504,7 @@ async def commands(event):
         if not arg:
             await event.reply("❌ /ai_set_key sk-proj-…")
             return
-        set_key(dotenv_path=env_file_path, key_to_set="OPENAI_API_KEY", value_to_set=arg)
+        set_key(dotenv_path=EFP, key_to_set="OPENAI_API_KEY", value_to_set=arg)
         os.putenv("OPENAI_API_KEY", arg)
         await event.reply(f"✅ Ключ збережено: {arg[:10]}…{arg[-4:]}\nВикористай /ai_enable")
 
