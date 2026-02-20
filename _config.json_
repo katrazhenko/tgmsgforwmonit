@@ -1,0 +1,13 @@
+{
+  "keywords": [],
+  "minus_words": [],
+  "forward_channel": "",
+  "admins": [],
+  "join_queue": [],
+  "ai_filter_enabled": false,
+  "ai_main_filter_role": "",
+  "ai_tagret_filter_criteria": "",
+  "ai_spam_filter_criteria": "",
+  "openai_model": "gpt-5-nano",
+  "skip_words": []
+}

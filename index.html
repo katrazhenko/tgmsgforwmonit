@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>tgmsgforwmonit — Telegram Monitor Bot</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Manrope:wght@400;500;600;800&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161d;
+    --surface2: #1a1e28;
+    --border: #232838;
+    --accent: #4f8eff;
+    --accent2: #7c5cfc;
+    --green: #3ecf8e;
+    --red: #f55b5b;
+    --yellow: #f0b429;
+    --text: #e2e8f4;
+    --muted: #6b7a99;
+    --code-bg: #0a0c10;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative;
+    overflow: hidden;
+    padding: 80px 24px 72px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(79,142,255,.18) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 80% 50%, rgba(124,92,252,.12) 0%, transparent 60%),
+      var(--bg);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(79,142,255,.12);
+    border: 1px solid rgba(79,142,255,.3);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: .04em;
+    margin-bottom: 24px;
+  }
+  .badge::before { content: '●'; font-size: 8px; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:.3 } }
+
+  header h1 {
+    font-size: clamp(2rem, 5vw, 3.4rem);
+    font-weight: 800;
+    letter-spacing: -.02em;
+    line-height: 1.15;
+    background: linear-gradient(135deg, #fff 30%, var(--accent) 80%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+
+  header p {
+    color: var(--muted);
+    font-size: 1.05rem;
+    max-width: 560px;
+    margin: 0 auto 32px;
+  }
+
+  .header-badges {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+  }
+  .pill.green { border-color: rgba(62,207,142,.3); color: var(--green); background: rgba(62,207,142,.07); }
+  .pill.blue  { border-color: rgba(79,142,255,.3); color: var(--accent); background: rgba(79,142,255,.07); }
+  .pill.purple{ border-color: rgba(124,92,252,.3); color: var(--accent2); background: rgba(124,92,252,.07); }
+
+  /* ── LAYOUT ── */
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(13,15,20,.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+  }
+
+  .nav-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    height: 52px;
+  }
+  .nav-inner::-webkit-scrollbar { display: none; }
+
+  nav a {
+    white-space: nowrap;
+    padding: 6px 14px;
+    border-radius: 7px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: color .15s, background .15s;
+  }
+  nav a:hover { color: var(--text); background: var(--surface2); }
+
+  /* ── SECTIONS ── */
+  section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+  section:last-child { border-bottom: none; }
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: -.02em;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 28px 0 14px;
+  }
+
+  p { color: #b0bcd4; margin-bottom: 14px; }
+
+  /* ── FLOW DIAGRAM ── */
+  .flow {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    margin: 24px 0;
+    max-width: 440px;
+  }
+
+  .flow-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 13.5px;
+    font-weight: 600;
+    position: relative;
+    width: 100%;
+  }
+
+  .flow-step .icon { font-size: 16px; flex-shrink: 0; }
+
+  .flow-arrow {
+    width: 2px;
+    height: 22px;
+    background: var(--border);
+    margin-left: 29px;
+    position: relative;
+  }
+  .flow-arrow::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: -4px;
+    border: 4px solid transparent;
+    border-top: 6px solid var(--border);
+  }
+
+  .flow-branch {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 28px;
+    font-size: 12px;
+    color: var(--muted);
+    padding: 4px 0;
+  }
+  .flow-branch .br-line {
+    width: 28px;
+    height: 2px;
+    background: var(--border);
+  }
+  .flow-branch .br-tag {
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .br-tag.ignore { background: rgba(245,91,91,.12); color: var(--red); border: 1px solid rgba(245,91,91,.25); }
+  .br-tag.pass   { background: rgba(62,207,142,.12); color: var(--green); border: 1px solid rgba(62,207,142,.25); }
+
+  /* ── CODE BLOCKS ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    overflow-x: auto;
+    margin: 16px 0;
+    position: relative;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #c9d6ef;
+  }
+
+  .copy-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-size: 11px;
+    font-family: 'Manrope', sans-serif;
+    font-weight: 600;
+    padding: 3px 10px;
+    cursor: pointer;
+    transition: color .15s, border-color .15s;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+
+  /* Syntax highlight classes */
+  .kw { color: #7c5cfc; }
+  .st { color: #3ecf8e; }
+  .cm { color: #4a5568; font-style: italic; }
+  .nm { color: #f0b429; }
+  .op { color: #6b7a99; }
+
+  /* ── STEP LIST ── */
+  .steps { display: flex; flex-direction: column; gap: 16px; margin: 20px 0; }
+
+  .step {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    transition: border-color .2s;
+  }
+  .step:hover { border-color: rgba(79,142,255,.3); }
+
+  .step-num {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    background: rgba(79,142,255,.15);
+    border: 1px solid rgba(79,142,255,.3);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .step-body strong { display: block; color: var(--text); font-weight: 700; margin-bottom: 4px; }
+  .step-body p { margin: 0; font-size: 13.5px; }
+
+  /* ── COMMAND TABLE ── */
+  .cmd-group { margin-bottom: 32px; }
+
+  .cmd-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+
+  .cmd-table th {
+    background: var(--surface2);
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+  }
+
+  .cmd-table td {
+    padding: 11px 16px;
+    font-size: 13.5px;
+    border-top: 1px solid var(--border);
+    color: #b0bcd4;
+  }
+
+  .cmd-table td:first-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+
+  .cmd-table tr:hover td { background: var(--surface2); }
+
+  /* ── ALERT BOXES ── */
+  .alert {
+    display: flex;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin: 16px 0;
+    font-size: 13.5px;
+    line-height: 1.6;
+  }
+  .alert.warn {
+    background: rgba(240,180,41,.08);
+    border: 1px solid rgba(240,180,41,.25);
+    color: #d4a827;
+  }
+  .alert.info {
+    background: rgba(79,142,255,.08);
+    border: 1px solid rgba(79,142,255,.25);
+    color: #7aaeff;
+  }
+  .alert.success {
+    background: rgba(62,207,142,.08);
+    border: 1px solid rgba(62,207,142,.25);
+    color: var(--green);
+  }
+  .alert-icon { font-size: 16px; flex-shrink: 0; padding-top: 2px; }
+
+  /* ── UNIT FILE ── */
+  .unit-file {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 16px 0;
+  }
+  .unit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 18px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted);
+  }
+  .unit-body { padding: 20px 22px; overflow-x: auto; }
+  .unit-section { color: #7c5cfc; font-weight: 700; }
+  .unit-key { color: var(--accent); }
+  .unit-val { color: var(--green); }
+  .unit-cm { color: #4a5568; font-style: italic; }
+
+  /* ── SYSTEMCTL CMDS ── */
+  .sys-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .sys-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    transition: border-color .2s;
+  }
+  .sys-card:hover { border-color: rgba(79,142,255,.3); }
+  .sys-card .label { font-size: 11px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+  .sys-card code { font-size: 12.5px; color: var(--text); background: none; }
+
+  /* ── STATS BAR ── */
+  .stats { display: flex; gap: 16px; flex-wrap: wrap; margin: 20px 0; }
+  .stat {
+    flex: 1; min-width: 140px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 20px;
+    text-align: center;
+  }
+  .stat .val { font-size: 2rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+  .stat .lbl { font-size: 12px; color: var(--muted); margin-top: 4px; font-weight: 600; }
+  .stat.blue .val { color: var(--accent); }
+  .stat.green .val { color: var(--green); }
+  .stat.purple .val { color: var(--accent2); }
+
+  /* ── FOOTER ── */
+  footer {
+    text-align: center;
+    padding: 40px 24px;
+    color: var(--muted);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .stats { flex-direction: column; }
+    .sys-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="badge">tgmsgforwmonit.service · systemd</div>
+  <h1>Telegram Monitor Bot</h1>
+  <p>Моніторинг Telegram-груп у реальному часі з AI-фільтрацією спаму та автопересилкою цільових повідомлень.</p>
+  <div class="header-badges">
+    <span class="pill green">● Python 3.10+</span>
+    <span class="pill blue">Telethon</span>
+    <span class="pill purple">OpenAI GPT</span>
+    <span class="pill">systemd</span>
+    <span class="pill">30 тестів ✓</span>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#how">Як працює</a>
+    <a href="#install">Встановлення</a>
+    <a href="#service">Systemd</a>
+    <a href="#commands">Команди</a>
+    <a href="#filter">Фільтрація</a>
+    <a href="#ai">AI-фільтр</a>
+    <a href="#logs">Логи</a>
+    <a href="#tests">Тести</a>
+  </div>
+</nav>
+
+<div class="container">
+
+  <!-- HOW IT WORKS -->
+  <section id="how">
+    <h2>⚡ Як це працює</h2>
+    <p>Бот працює як <strong>userbot</strong> — підключається від імені звичайного Telegram-акаунту та слухає всі вхідні повідомлення у групах. Кожне повідомлення проходить через ланцюг фільтрів:</p>
+
+    <div class="flow">
+      <div class="flow-step"><span class="icon">📨</span> Вхідне повідомлення</div>
+      <div class="flow-arrow"></div>
+      <div class="flow-step"><span class="icon">🚫</span> Перевірка мінус-слів</div>
+      <div class="flow-branch"><div class="br-line"></div><span class="br-tag ignore">ІГНОР</span> знайдено стоп-слово</div>
+      <div class="flow-arrow"></div>
+      <div class="flow-step"><span class="icon">🔍</span> Пошук ключових слів</div>
+      <div class="flow-branch"><div class="br-line"></div><span class="br-tag ignore">ІГНОР</span> keyword не знайдено</div>
+      <div class="flow-arrow"></div>
+      <div class="flow-step"><span class="icon">🤖</span> AI-фільтрація (GPT)</div>
+      <div class="flow-branch"><div class="br-line"></div><span class="br-tag ignore">ІГНОР</span> GPT: SPAM</div>
+      <div class="flow-arrow"></div>
+      <div class="flow-step"><span class="icon">📥</span> Черга пересилки</div>
+      <div class="flow-arrow"></div>
+      <div class="flow-step" style="border-color:rgba(62,207,142,.3)"><span class="icon">📢</span> Канал-дестинація</div>
+    </div>
+
+    <div class="stats">
+      <div class="stat blue"><div class="val">∞</div><div class="lbl">Груп одночасно</div></div>
+      <div class="stat green"><div class="val">3с</div><div class="lbl">Затримка між пересилками</div></div>
+      <div class="stat purple"><div class="val">GPT</div><div class="lbl">AI-фільтр спаму</div></div>
+    </div>
+  </section>
+
+  <!-- INSTALLATION -->
+  <section id="install">
+    <h2>🛠 Встановлення</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <strong>Клонуй репозиторій</strong>
+          <p>Рекомендований шлях для системних сервісів — <code>/opt</code></p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <strong>Створи virtualenv та встанови залежності</strong>
+          <p>Ізольоване оточення запобігає конфліктам системних пакетів</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <strong>Заповни <code>.env</code> та пройди авторизацію вручну</strong>
+          <p>Потрібно один раз — Telethon збереже сесію у <code>.session</code>-файл</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <strong>Зареєструй і запусти systemd-сервіс</strong>
+          <p>Бот працює у фоні та автоматично стартує після перезавантаження</p>
+        </div>
+      </div>
+    </div>
+
+<pre><button class="copy-btn" onclick="copy(this)">copy</button><code><span class="cm"># 1. Клонування</span>
+sudo git clone https://github.com/your-repo/tgmsgforwmonit.git /opt/tgmsgforwmonit
+cd /opt/tgmsgforwmonit
+
+<span class="cm"># 2. Virtualenv</span>
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+<span class="cm"># 3. Конфіг та авторизація</span>
+cp .env.example .env && nano .env
+python main.py          <span class="cm"># ввести код → Ctrl+C після старту</span></code></pre>
+
+    <div class="alert warn">
+      <span class="alert-icon">⚠️</span>
+      <span>Авторизацію потрібно пройти <strong>вручну, один раз</strong>, до реєстрації сервісу. Після збереження <code>.session</code>-файлу бот запускається без коду підтвердження.</span>
+    </div>
+  </section>
+
+  <!-- SYSTEMD SERVICE -->
+  <section id="service">
+    <h2>⚙️ Systemd-сервіс</h2>
+    <p>Бот запускається як <strong>tgmsgforwmonit.service</strong> — системний юніт, що стартує автоматично після перезавантаження та перезапускається при падінні.</p>
+
+    <h3>Unit-файл</h3>
+
+    <div class="unit-file">
+      <div class="unit-header">
+        <span>/etc/systemd/system/tgmsgforwmonit.service</span>
+        <button class="copy-btn" style="position:static" onclick="copyUnit()">copy</button>
+      </div>
+      <div class="unit-body">
+<pre style="background:none;border:none;padding:0;margin:0"><code id="unit-content"><span class="unit-section">[Unit]</span>
+<span class="unit-key">Description</span>=<span class="unit-val">Telegram Monitor Bot — tgmsgforwmonit</span>
+<span class="unit-key">Documentation</span>=<span class="unit-val">https://your-org.github.io/tgmsgforwmonit</span>
+<span class="unit-key">After</span>=<span class="unit-val">network-online.target</span>
+<span class="unit-key">Wants</span>=<span class="unit-val">network-online.target</span>
+
+<span class="unit-section">[Service]</span>
+<span class="unit-key">Type</span>=<span class="unit-val">simple</span>
+<span class="unit-key">User</span>=<span class="unit-val">ubuntu</span>               <span class="unit-cm"># замін на свого користувача</span>
+<span class="unit-key">Group</span>=<span class="unit-val">ubuntu</span>
+<span class="unit-key">WorkingDirectory</span>=<span class="unit-val">/opt/tgmsgforwmonit</span>
+<span class="unit-key">EnvironmentFile</span>=<span class="unit-val">/opt/tgmsgforwmonit/.env</span>
+<span class="unit-key">ExecStart</span>=<span class="unit-val">/opt/tgmsgforwmonit/.venv/bin/python main.py</span>
+<span class="unit-key">Restart</span>=<span class="unit-val">on-failure</span>
+<span class="unit-key">RestartSec</span>=<span class="unit-val">10</span>
+<span class="unit-key">StandardOutput</span>=<span class="unit-val">journal</span>
+<span class="unit-key">StandardError</span>=<span class="unit-val">journal</span>
+<span class="unit-key">SyslogIdentifier</span>=<span class="unit-val">tgmsgforwmonit</span>
+<span class="unit-key">ExecStopPost</span>=<span class="unit-val">/bin/rm -f /opt/tgmsgforwmonit/monitor.lock</span>
+
+<span class="unit-section">[Install]</span>
+<span class="unit-key">WantedBy</span>=<span class="unit-val">multi-user.target</span></code></pre>
+      </div>
+    </div>
+
+    <div class="alert info">
+      <span class="alert-icon">ℹ️</span>
+      <span><code>ExecStopPost</code> видаляє <code>monitor.lock</code> при зупинці — захист від ситуації, коли процес впав без коректного завершення.</span>
+    </div>
+
+    <h3>Активація</h3>
+
+<pre><button class="copy-btn" onclick="copy(this)">copy</button><code><span class="cm"># Перечитати конфіги</span>
+sudo systemctl daemon-reload
+
+<span class="cm"># Автозапуск при старті системи</span>
+sudo systemctl enable tgmsgforwmonit.service
+
+<span class="cm"># Запуск</span>
+sudo systemctl start tgmsgforwmonit.service
+
+<span class="cm"># Перевірка</span>
+sudo systemctl status tgmsgforwmonit.service</code></pre>
+
+    <h3>Команди управління сервісом</h3>
+    <div class="sys-grid">
+      <div class="sys-card"><div class="label">Старт</div><code>sudo systemctl start tgmsgforwmonit</code></div>
+      <div class="sys-card"><div class="label">Зупинка</div><code>sudo systemctl stop tgmsgforwmonit</code></div>
+      <div class="sys-card"><div class="label">Перезапуск</div><code>sudo systemctl restart tgmsgforwmonit</code></div>
+      <div class="sys-card"><div class="label">Статус</div><code>sudo systemctl status tgmsgforwmonit</code></div>
+      <div class="sys-card"><div class="label">Вимкнути автозапуск</div><code>sudo systemctl disable tgmsgforwmonit</code></div>
+      <div class="sys-card"><div class="label">Оновлення коду</div><code>git pull && sudo systemctl restart tgmsgforwmonit</code></div>
+    </div>
+
+    <h3>Усунення проблем</h3>
+
+    <p><strong>Залишився <code>monitor.lock</code> після краша:</strong></p>
+<pre><button class="copy-btn" onclick="copy(this)">copy</button><code>sudo systemctl stop tgmsgforwmonit
+rm /opt/tgmsgforwmonit/monitor.lock
+sudo systemctl start tgmsgforwmonit</code></pre>
+
+    <p><strong>Потрібна повторна авторизація Telegram:</strong></p>
+<pre><button class="copy-btn" onclick="copy(this)">copy</button><code>sudo systemctl stop tgmsgforwmonit
+rm /opt/tgmsgforwmonit/*.session
+cd /opt/tgmsgforwmonit && source .venv/bin/activate && python main.py
+<span class="cm"># пройти авторизацію → Ctrl+C</span>
+sudo systemctl start tgmsgforwmonit</code></pre>
+  </section>
+
+  <!-- COMMANDS -->
+  <section id="commands">
+    <h2>📋 Команди управління</h2>
+    <p>Команди надсилаються в <strong>особисте повідомлення акаунту бота</strong> з акаунту, що є в списку <code>admins</code>.</p>
+
+    <div class="cmd-group">
+      <h3>🤖 AI-фільтрація</h3>
+      <table class="cmd-table">
+        <tr><th>Команда</th><th>Опис</th></tr>
+        <tr><td>/ai_enable</td><td>Увімкнути GPT-фільтрацію</td></tr>
+        <tr><td>/ai_disable</td><td>Вимкнути</td></tr>
+        <tr><td>/ai_set_key sk-...</td><td>Задати OpenAI API ключ</td></tr>
+        <tr><td>/ai_set_model gpt-4o-mini</td><td>Змінити модель GPT</td></tr>
+        <tr><td>/ai_status</td><td>Статус, модель, статистика</td></tr>
+        <tr><td>/ai_test &lt;текст&gt;</td><td>Протестувати фільтр на довільному тексті</td></tr>
+      </table>
+    </div>
+
+    <div class="cmd-group">
+      <h3>🔍 Ключові слова та фільтри</h3>
+      <table class="cmd-table">
+        <tr><th>Команда</th><th>Опис</th></tr>
+        <tr><td>/add_word &lt;слово&gt;</td><td>Додати ключове слово</td></tr>
+        <tr><td>/del_word &lt;слово&gt;</td><td>Видалити ключове слово</td></tr>
+        <tr><td>/add_minus &lt;слово&gt;</td><td>Додати мінус-слово</td></tr>
+        <tr><td>/del_minus &lt;слово&gt;</td><td>Видалити мінус-слово</td></tr>
+        <tr><td>/clean_minus</td><td>Очистити мінус-слова від дублів і skip/keyword токенів</td></tr>
+        <tr><td>/add_skip &lt;слово&gt;</td><td>Додати слово до списку ігнорованих</td></tr>
+        <tr><td>/del_skip &lt;слово&gt;</td><td>Видалити skip-слово</td></tr>
+      </table>
+    </div>
+
+    <div class="cmd-group">
+      <h3>📥 Групи та канал</h3>
+      <table class="cmd-table">
+        <tr><th>Команда</th><th>Опис</th></tr>
+        <tr><td>/set_channel @канал</td><td>Задати канал для пересилки</td></tr>
+        <tr><td>/get_channel</td><td>Поточний канал</td></tr>
+        <tr><td>/queue_status</td><td>Кількість повідомлень у черзі</td></tr>
+        <tr><td>/join_add @г1 @г2</td><td>Додати групи в чергу на вступ</td></tr>
+        <tr><td>/join_del @група</td><td>Видалити з черги</td></tr>
+        <tr><td>/join_list</td><td>Показати чергу</td></tr>
+        <tr><td>/join_all</td><td>Вступити у всі (15 сек між вступами)</td></tr>
+        <tr><td>/join @група</td><td>Вступити в одну групу</td></tr>
+        <tr><td>/leave @група</td><td>Вийти з групи</td></tr>
+        <tr><td>/groups</td><td>Всі групи/канали акаунту</td></tr>
+      </table>
+    </div>
+
+    <div class="cmd-group">
+      <h3>⚙️ Загальне</h3>
+      <table class="cmd-table">
+        <tr><th>Команда</th><th>Опис</th></tr>
+        <tr><td>/add_admin @user</td><td>Додати адміна</td></tr>
+        <tr><td>/del_admin @user</td><td>Видалити адміна</td></tr>
+        <tr><td>/list</td><td>Всі поточні налаштування</td></tr>
+        <tr><td>/help</td><td>Довідка по командах</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- FILTER LOGIC -->
+  <section id="filter">
+    <h2>🔎 Логіка фільтрації</h2>
+
+    <h3>Ключові слова — word-boundary матч</h3>
+    <p>Кожен токен ключової фрази перевіряється через регулярний вираз <code>\b...\b</code>. Це означає, що часткові збіги не спрацьовують:</p>
+    <div class="stats">
+      <div class="stat green" style="text-align:left;padding:14px 18px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green);margin-bottom:6px">✓ tarjeta → "Mi tarjeta expiró"</div>
+        <div style="font-size:12px;color:var(--muted)">Слово цілком — збіг</div>
+      </div>
+      <div class="stat" style="text-align:left;padding:14px 18px;background:rgba(245,91,91,.07);border-color:rgba(245,91,91,.25)">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--red);margin-bottom:6px">✗ tarjeta → "tarjetita roja"</div>
+        <div style="font-size:12px;color:var(--muted)">Часткове входження — не збіг</div>
+      </div>
+    </div>
+
+    <h3>Мінус-слова — пряме входження</h3>
+    <p>Перевірка через <code>phrase in text.lower()</code>. Підтримуються мультислівні фрази: <code>"usdt p2p"</code> заблокує "хочу купити usdt p2p сьогодні". Спрацьовує <strong>до</strong> перевірки keywords — повідомлення відкидається негайно.</p>
+
+    <h3>/clean_minus — навіщо?</h3>
+    <p>Якщо мінус-слово випадково містить keyword або skip-слово (наприклад, <code>"cita garantizado"</code>), воно може заблокувати цільові повідомлення. Команда <code>/clean_minus</code> видаляє такі токени та прибирає дублікати.</p>
+
+    <div class="alert success">
+      <span class="alert-icon">✅</span>
+      <span>Після <code>/clean_minus</code>: <code>"cita garantizado"</code> → <code>"garantizado"</code>. Повідомлення з keyword <code>cita</code> більше не блокується.</span>
+    </div>
+  </section>
+
+  <!-- AI -->
+  <section id="ai">
+    <h2>🤖 AI-фільтрація</h2>
+    <p>При увімкненому AI кожне повідомлення, що пройшло keyword-фільтр, надсилається в <strong>OpenAI GPT</strong>. GPT отримує контекст і відповідає одним словом:</p>
+
+    <div class="stats">
+      <div class="stat green"><div class="val">TARGET</div><div class="lbl">цільове — пересилається</div></div>
+      <div class="stat" style="background:rgba(245,91,91,.07);border-color:rgba(245,91,91,.2)"><div class="val" style="color:var(--red)">SPAM</div><div class="lbl">реклама — ігнорується</div></div>
+    </div>
+
+    <h3>Що отримує GPT</h3>
+    <ul style="color:#b0bcd4;padding-left:20px;line-height:2">
+      <li>Текст повідомлення</li>
+      <li>Знайдене ключове слово</li>
+      <li>Назву чату</li>
+      <li>Перші 50 keywords та 20 minus_words як контекст</li>
+    </ul>
+
+    <h3>Рекомендовані моделі</h3>
+    <table class="cmd-table">
+      <tr><th>Модель</th><th>Ціна</th><th>Точність</th><th>Використання</th></tr>
+      <tr><td>gpt-4o-mini</td><td>💚 найдешевша</td><td>Достатня</td><td>Рекомендовано за замовчуванням</td></tr>
+      <tr><td>gpt-4o</td><td>🟡 дорожче</td><td>Висока</td><td>Якщо багато false-positive</td></tr>
+    </table>
+
+    <div class="alert info">
+      <span class="alert-icon">ℹ️</span>
+      <span>При помилці API або недоступності OpenAI — повідомлення <strong>пропускається</strong> (не блокується). Краще показати зайве, ніж пропустити цільове.</span>
+    </div>
+  </section>
+
+  <!-- LOGS -->
+  <section id="logs">
+    <h2>📊 Логи та моніторинг</h2>
+
+    <h3>journalctl</h3>
+<pre><button class="copy-btn" onclick="copy(this)">copy</button><code><span class="cm"># Останні 50 рядків</span>
+sudo journalctl -u tgmsgforwmonit -n 50
+
+<span class="cm"># Live-стрім</span>
+sudo journalctl -u tgmsgforwmonit -f
+
+<span class="cm"># За сьогодні</span>
+sudo journalctl -u tgmsgforwmonit --since today
+
+<span class="cm"># За конкретний час</span>
+sudo journalctl -u tgmsgforwmonit --since "2026-02-20 10:00" --until "2026-02-20 11:00"</code></pre>
+
+    <h3>Файловий лог</h3>
+    <p>Лог також пишеться у <code>/opt/tgmsgforwmonit/monitor.log</code> — зручно для tail або grep:</p>
+<pre><button class="copy-btn" onclick="copy(this)">copy</button><code>tail -f /opt/tgmsgforwmonit/monitor.log
+grep "AI ЗАБЛОКУВАВ" /opt/tgmsgforwmonit/monitor.log | wc -l</code></pre>
+  </section>
+
+  <!-- TESTS -->
+  <section id="tests">
+    <h2>🧪 Тести</h2>
+    <p>Юніт-тести покривають усі чисті функції без залежності від Telegram або мережі.</p>
+
+<pre><button class="copy-btn" onclick="copy(this)">copy</button><code>cd /opt/tgmsgforwmonit
+source .venv/bin/activate
+python tests.py</code></pre>
+
+    <table class="cmd-table">
+      <tr><th>Модуль</th><th>Тести</th><th>Що перевіряється</th></tr>
+      <tr><td>clean_minus_words</td><td>7</td><td>skip/keyword видалення, дедублікація, порожні входи</td></tr>
+      <tr><td>has_minus_word</td><td>6</td><td>одне слово, мультислів. фраза, регістр, порожні дані</td></tr>
+      <tr><td>find_keyword</td><td>8</td><td>мультислів. keyword, кирилиця, часткові збіги</td></tr>
+      <tr><td>format_sender</td><td>4</td><td>всі комбінації: ім'я + username, id, порожньо</td></tr>
+      <tr><td>is_admin</td><td>4</td><td>регістр, валідний/невалідний, порожній список</td></tr>
+      <tr><td>integration</td><td>2</td><td>очищення без хибних спрацювань, спам залишається</td></tr>
+    </table>
+
+    <div class="alert success">
+      <span class="alert-icon">✅</span>
+      <span><strong>30 тестів, 0 помилок</strong></span>
+    </div>
+  </section>
+
+</div><!-- /container -->
+
+<footer>
+  <p>tgmsgforwmonit · <a href="https://github.com/your-repo/tgmsgforwmonit">GitHub</a> · MIT License</p>
+</footer>
+
+<script>
+  function copy(btn) {
+    const pre = btn.closest('pre');
+    const text = pre.innerText.replace('copy\n', '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied!';
+      setTimeout(() => btn.textContent = 'copy', 1800);
+    });
+  }
+
+  function copyUnit() {
+    const text = document.getElementById('unit-content').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      event.target.textContent = 'copied!';
+      setTimeout(() => event.target.textContent = 'copy', 1800);
+    });
+  }
+
+  // Active nav link on scroll
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a');
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(l => l.style.color = '');
+        const link = document.querySelector(`nav a[href="#${e.target.id}"]`);
+        if (link) link.style.color = 'var(--accent)';
+      }
+    });
+  }, { rootMargin: '-30% 0px -60% 0px' });
+
+  sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
