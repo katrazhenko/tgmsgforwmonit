@@ -528,7 +528,10 @@ async def commands(event):
             f"{'🟢 УВІМКНЕНА' if enabled else '🔴 ВИМКНЕНА'}\n"
             f"🔑 Ключ: {'✅' if key_ok else '❌ не налаштовано'}\n"
             f"🧠 Модель: {config.get('openai_model', 'gpt-4o-mini')}\n"
-            f"📊 Перевірено: {ai_stats['checked']} | "
+            f"🎭 Роль: {'✅' if config.get('ai_main_filter_role') else '❌ не задано'}\n"
+            f"🎯 Критерії цільового: {'✅' if config.get('ai_tagret_filter_criteria') else '❌ не задано'}\n"
+            f"� Критерії спаму: {'✅' if config.get('ai_spam_filter_criteria') else '❌ не задано'}\n"
+            f"�📊 Перевірено: {ai_stats['checked']} | "
             f"Пропущено: {ai_stats['passed']} | "
             f"Відфільтровано: {ai_stats['filtered']}"
         )
@@ -540,6 +543,43 @@ async def commands(event):
         await event.reply("🤖 Тестую…")
         result = await ai_filter_message(arg, "ситу", "test_chat")
         await event.reply("✅ AI ПРОПУСТИВ (цільове)" if result else "🚫 AI ЗАБЛОКУВАВ (спам)")
+
+    # === AI ролі та критерії ===
+    elif cmd == "/ai_set_role":
+        if not arg:
+            await event.reply("❌ /ai_set_role <текст ролі AI>")
+            return
+        config["ai_main_filter_role"] = arg
+        await update_config(config)
+        await event.reply(f"✅ AI роль встановлено:\n{arg[:200]}")
+
+    elif cmd == "/ai_get_role":
+        role = config.get("ai_main_filter_role", "")
+        await event.reply(f"🎭 **AI роль:**\n{role}" if role else "❌ AI роль не налаштовано")
+
+    elif cmd == "/ai_set_target":
+        if not arg:
+            await event.reply("❌ /ai_set_target <критерії цільового повідомлення>")
+            return
+        config["ai_tagret_filter_criteria"] = arg
+        await update_config(config)
+        await event.reply(f"✅ Критерії ЦІЛЬОВОГО встановлено:\n{arg[:200]}")
+
+    elif cmd == "/ai_get_target":
+        criteria = config.get("ai_tagret_filter_criteria", "")
+        await event.reply(f"🎯 **Критерії ЦІЛЬОВОГО:**\n{criteria}" if criteria else "❌ Критерії цільового не налаштовано")
+
+    elif cmd == "/ai_set_spam":
+        if not arg:
+            await event.reply("❌ /ai_set_spam <критерії спаму>")
+            return
+        config["ai_spam_filter_criteria"] = arg
+        await update_config(config)
+        await event.reply(f"✅ Критерії СПАМУ встановлено:\n{arg[:200]}")
+
+    elif cmd == "/ai_get_spam":
+        criteria = config.get("ai_spam_filter_criteria", "")
+        await event.reply(f"🚫 **Критерії СПАМУ:**\n{criteria}" if criteria else "❌ Критерії спаму не налаштовано")
 
     # === Канал ===
     elif cmd == "/set_channel":
@@ -811,6 +851,12 @@ async def commands(event):
             "/ai_disable — вимкнути\n"
             "/ai_set_key [ключ] — OpenAI ключ\n"
             "/ai_set_model [модель] — модель GPT\n"
+            "/ai_set_role [текст] — задати роль AI\n"
+            "/ai_get_role — поточна роль AI\n"
+            "/ai_set_target [текст] — критерії цільового\n"
+            "/ai_get_target — поточні критерії цільового\n"
+            "/ai_set_spam [текст] — критерії спаму\n"
+            "/ai_get_spam — поточні критерії спаму\n"
             "/ai_status — статус і статистика\n"
             "/ai_test [текст] — протестувати\n\n"
             "👤 **Адміни:**\n"
