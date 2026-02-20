@@ -437,6 +437,12 @@ async def monitor(event):
 
     config = await get_config()
 
+    # Виключити чати з адмінами зі списку моніторингу
+    chat = await event.get_chat()
+    chat_username = getattr(chat, "username", "") or ""
+    if chat_username and is_admin(chat_username, config.get("admins", [])):
+        return
+
     # Перевірка мінус-слів
     if has_minus_word(text, config.get("minus_words", [])):
         return
@@ -446,7 +452,6 @@ async def monitor(event):
     if not found_keyword:
         return
 
-    chat = await event.get_chat()
     sender = await event.get_sender()
     chat_name = format_chat(chat)
     sender_name = format_sender(sender)
