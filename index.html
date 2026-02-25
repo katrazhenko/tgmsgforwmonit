@@ -664,6 +664,7 @@
       <span class="pill green">● Python 3.10+</span>
       <span class="pill blue">Telethon</span>
       <span class="pill purple">OpenAI GPT</span>
+      <span class="pill">Gemini AI</span>
       <span class="pill">systemd</span>
       <span class="pill">45 тестів ✓</span>
     </div>
@@ -881,7 +882,7 @@ sudo systemctl start tgmsgforwmonit</code></pre>
 
       <p><strong>Потрібна повторна авторизація Telegram:</strong></p>
       <pre><button class="copy-btn" onclick="copy(this)">copy</button><code>sudo systemctl stop tgmsgforwmonit
-rm /opt/tgmsgforwmonit/*.session
+rm /opt/tgmsgforwmonit/data/*.session
 cd /opt/tgmsgforwmonit && source .venv/bin/activate && python main.py
 <span class="cm"># пройти авторизацію → Ctrl+C</span>
 sudo systemctl start tgmsgforwmonit</code></pre>
@@ -940,14 +941,7 @@ sudo systemctl start tgmsgforwmonit</code></pre>
             <td>/ai_get_spam</td>
             <td>Переглянути критерії спаму</td>
           </tr>
-          <tr>
-            <td>/ai_auto_minus_on</td>
-            <td>Увімкнути авто-додання стоп-слів з спаму</td>
-          </tr>
-          <tr>
-            <td>/ai_auto_minus_off</td>
-            <td>Вимкнути авто-додання стоп-слів</td>
-          </tr>
+
           <tr>
             <td>/ai_status</td>
             <td>Статус, модель, статистика</td>
@@ -1063,6 +1057,14 @@ sudo systemctl start tgmsgforwmonit</code></pre>
             <td>Видалити адміна</td>
           </tr>
           <tr>
+            <td>/stats [дні]</td>
+            <td>Статистика фільтрації (сьогодні/7/30)</td>
+          </tr>
+          <tr>
+            <td>/blocked [дні]</td>
+            <td>Список заблокованих повідомлень</td>
+          </tr>
+          <tr>
             <td>/list</td>
             <td>Всі поточні налаштування</td>
           </tr>
@@ -1134,7 +1136,7 @@ sudo systemctl start tgmsgforwmonit</code></pre>
         <li>Текст повідомлення</li>
         <li>Знайдене ключове слово</li>
         <li>Назву чату</li>
-        <li>Перші 50 keywords та 20 minus_words як контекст</li>
+        <li>Перші 100 keywords та 100 minus_words як контекст</li>
         <li>Роль AI (<code>ai_main_filter_role</code>)</li>
         <li>Критерії цільового (<code>ai_tagret_filter_criteria</code>)</li>
         <li>Критерії спаму (<code>ai_spam_filter_criteria</code>)</li>
@@ -1197,10 +1199,16 @@ sudo journalctl -u tgmsgforwmonit --since today
 <span class="cm"># За конкретний час</span>
 sudo journalctl -u tgmsgforwmonit --since "2026-02-20 10:00" --until "2026-02-20 11:00"</code></pre>
 
-      <h3>Файловий лог</h3>
-      <p>Лог також пишеться у <code>/opt/tgmsgforwmonit/monitor.log</code> — зручно для tail або grep:</p>
-      <pre><button class="copy-btn" onclick="copy(this)">copy</button><code>tail -f /opt/tgmsgforwmonit/monitor.log
-grep "AI ЗАБЛОКУВАВ" /opt/tgmsgforwmonit/monitor.log | wc -l</code></pre>
+      <h3>Файлові логи</h3>
+      <p>Логи пишуться у директорію <code>logs/</code> з щоденною ротацією — окремо для user та bot клієнтів:</p>
+      <pre><button class="copy-btn" onclick="copy(this)">copy</button><code><span class="cm"># User client (моніторинг)</span>
+tail -f /opt/tgmsgforwmonit/logs/user_$(date +%F).log
+
+<span class="cm"># Bot client (обробка, AI)</span>
+tail -f /opt/tgmsgforwmonit/logs/bot_$(date +%F).log
+
+<span class="cm"># Пошук блокувань AI</span>
+grep "AI ЗАБЛОКУВАВ" /opt/tgmsgforwmonit/logs/bot_$(date +%F).log | wc -l</code></pre>
     </section>
 
     <!-- TESTS -->
@@ -1210,7 +1218,7 @@ grep "AI ЗАБЛОКУВАВ" /opt/tgmsgforwmonit/monitor.log | wc -l</code></p
 
       <pre><button class="copy-btn" onclick="copy(this)">copy</button><code>cd /opt/tgmsgforwmonit
 source .venv/bin/activate
-python -m pytest test_main.py -v</code></pre>
+python -m pytest tests/ -v</code></pre>
 
       <table class="cmd-table">
         <tr>
